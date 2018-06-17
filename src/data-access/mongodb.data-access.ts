@@ -49,20 +49,69 @@ export class MongoDBDataAccess {
                 countDocument: result.result.n
             };
         } catch (err) {
-            const error: IError = {
-                code: err.code,
-                errorMessage: err.errmsg,
-                typeError: err.name,
-                method: 'insertOne',
-                inClass: 'MongoDBDataAccess'
-            };
-            this._error.setError(error);
-            this._response = {
-                ok: false,
-                errorMessage: this._error.getErrorMessageResponse()
-            };
+            this.setError(err, 'insertOne');
         } finally {
             return this._response;
         }
+    }
+
+    /**
+     * find one document in the database
+     * @param find the query to search for
+     * @param collection the collection of the document
+     */
+    async findOne(find: Object, collection: string) {
+        try {
+            const result = await this._db.collection(collection).findOne(find);
+
+            console.log(result);
+            this._response = {
+                ok: true,
+                document: result
+            };
+            // return result;
+        } catch (err) {
+            this.setError(err, 'findOne');
+        } finally {
+            return this._response;
+        }
+    }
+
+    /**
+     * Updates one document in the collection
+     * @param collection the collection where the document is in
+     * @param find searchstring
+     * @param update date to update
+     */
+    async updateCollection(collection: string, find: Object, update: Object) {
+        try {
+            const result = await this._db
+                .collection(collection)
+                .updateOne(find, { $set: update });
+
+            this._response = {
+                ok: result.result.ok === 1 ? true : false,
+                countDocument: result.result.n
+            };
+        } catch (err) {
+            this.setError(err, 'updateCollection');
+        } finally {
+            return this._response;
+        }
+    }
+
+    private setError(err: any, fncName: string) {
+        const error: IError = {
+            code: err.code,
+            errorMessage: err.errmsg,
+            inClass: 'MongoDBDataAccess',
+            method: fncName,
+            typeError: err.name
+        };
+        this._error.setError(error);
+        this._response = {
+            ok: false,
+            errorMessage: this._error.getErrorMessageResponse()
+        };
     }
 }

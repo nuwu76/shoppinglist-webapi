@@ -1,5 +1,6 @@
 const express = require('express');
 const moment = require('moment');
+const jwt = require('jsonwebtoken');
 
 import * as crypt from 'bcrypt';
 
@@ -7,7 +8,6 @@ import { IRouter } from './contracts/irouter';
 import { Router, Request, Response } from 'express';
 import { IUser } from './contracts/iuser';
 import { MongoDBDataAccess } from '../data-access/mongodb.data-access';
-import { IResponse } from './contracts/iresponse';
 
 export class AuthenticationRoute implements IRouter {
     private _router: Router;
@@ -17,6 +17,8 @@ export class AuthenticationRoute implements IRouter {
         this._router = express.Router();
         this._mongoDB = new MongoDBDataAccess('shoppinglist');
         this.registerRoute();
+        this.loginRoute();
+        this.logoutRouter();
     }
 
     getRouter(): Router {
@@ -49,6 +51,95 @@ export class AuthenticationRoute implements IRouter {
              */
             await this._mongoDB.connect();
             const result = await this._mongoDB.insertOne('users', user);
+
+            res.status(result.ok ? 200 : 401).send({ result });
+        });
+    }
+
+    /**
+     * login route
+     */
+    private loginRoute() {
+        this._router.post('/login', async (req: Request, res: Response) => {
+            const body = req.body;
+            const username: string = body.username;
+            const password: string = body.password;
+
+            /**
+             * search for the username
+             */
+            await this._mongoDB.connect();
+            const result = await this._mongoDB.findOne(
+                { username: username },
+                'users'
+            );
+            /**
+             * Username not found
+             */
+            if (!result.document) {
+                result.errorMessage = 'Username and/or password wrong!';
+                result.ok = false;
+            } else {
+                /**
+                 * check password
+                 */
+
+                const passwordHashTemp = await crypt.hash(
+                    password,
+                    result.document.passwordSalt
+                );
+                if (passwordHashTemp === result.document.passwordHash) {
+                    /**
+                     * Password matches
+                     */
+
+                    const saltJwt = await crypt.genSalt(10);
+                    const payload = {
+                        username: username,
+                        appname: 'shoppinglist'
+                    };
+
+                    const token = jwt.sign(
+                        {
+                            exp: Math.floor(Date.now() / 1000) + 60 * 60 * 4,
+                            data: payload
+                        },
+                        saltJwt
+                    );
+
+                    const resultUpdate = await this._mongoDB.updateCollection(
+                        'users',
+                        { username: username },
+                        {
+                            lastLogin: moment().format('YYYY-MM-DD HH:mm:ss'),
+                            saltJwt: saltJwt
+                        }
+                    );
+
+                    resultUpdate.token = token;
+                    res.status(result.ok ? 200 : 401).send({ resultUpdate });
+                } else {
+                    res.status(404).send(result);
+                }
+            }
+        });
+    }
+
+    /**
+     * logout router
+     */
+    private logoutRouter() {
+        this._router.post('/logout', async (req: Request, res: Response) => {
+            const body = req.body;
+
+            const username = body.username;
+
+            await this._mongoDB.connect();
+            const result = await this._mongoDB.updateCollection(
+                'users',
+                { username: username },
+                { saltJwt: '' }
+            );
 
             res.status(result.ok ? 200 : 401).send({ result });
         });
