@@ -1,26 +1,31 @@
 {
-  "name": "shoppinglist-webapi",
-  "version": "0.1.0",
-  "description": "It is the webapi for the shoppinglist webapp",
-  "main": "dist/index.js",
-  "repository": "https://github.com/nuwu76/shoppinglist-webapi.git",
-  "author": "Mike <nuwu76@gmail.com>",
-  "license": "MIT",
-  "dependencies": {
-    "bcrypt": "^2.0.1",
-    "body-parser": "^1.18.3",
-    "express": "^4.16.3",
-    "jsonwebtoken": "^8.3.0",
-    "moment": "^2.22.2",
-    "mongodb": "^3.0.10"
-  },
-  "devDependencies": {
-    "@types/bcrypt": "^2.0.0",
-    "@types/body-parser": "^1.17.0",
-    "@types/express": "^4.16.0",
-    "@types/jsonwebtoken": "^7.2.7",
-    "@types/moment": "^2.13.0",
-    "@types/mongodb": "^3.0.20",
-    "nodemon": "^1.17.5"
-  }
+    "name": "shoppinglist-webapi",
+    "version": "0.1.0",
+    "description": "It is the webapi for the shoppinglist webapp",
+    "main": "dist/index.js",
+    "repository": "https://github.com/nuwu76/shoppinglist-webapi.git",
+    "author": "Mike <nuwu76@gmail.com>",
+    "license": "MIT",
+    "scripts": {
+        "watch": "./node_modules/.bin/nodemon",
+        "tsc": "./node_modules/.bin/tsc -w"
+    },
+    "dependencies": {
+        "bcrypt": "^2.0.1",
+        "body-parser": "^1.18.3",
+        "express": "^4.16.3",
+        "jsonwebtoken": "^8.3.0",
+        "moment": "^2.22.2",
+        "mongodb": "^3.0.10"
+    },
+    "devDependencies": {
+        "@types/bcrypt": "^2.0.0",
+        "@types/body-parser": "^1.17.0",
+        "@types/express": "^4.16.0",
+        "@types/jsonwebtoken": "^7.2.7",
+        "@types/moment": "^2.13.0",
+        "@types/mongodb": "^3.0.20",
+        "nodemon": "^1.17.5",
+        "typescript": "^2.9.2"
+    }
 }
