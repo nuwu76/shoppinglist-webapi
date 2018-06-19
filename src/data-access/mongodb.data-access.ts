@@ -2,13 +2,16 @@ import { MongoClient, Db, Server } from 'mongodb';
 import { ErrorLog } from '../helper-class/errorlog';
 import { IResponse } from '../contracts/iresponse';
 import { IError } from '../contracts/ierror';
+import { IReturn } from './contracts/ireturn';
+import { IUser } from '../contracts/iuser';
 
 export class MongoDBDataAccess {
     private _mongo: MongoClient;
     private _db: Db;
     private _database: string;
     private _error: ErrorLog;
-    private _response: IResponse;
+    // private _response: IResponse;
+    private _return: IReturn;
 
     /**
      * Initialize to connect to MongoDB
@@ -16,8 +19,11 @@ export class MongoDBDataAccess {
      */
     constructor(database: string) {
         this._error = new ErrorLog();
-        this._response = {
-            ok: false
+
+        this._return = {
+            ok: false,
+            status: 404,
+            errorMessage: ''
         };
 
         this._database = database;
@@ -44,14 +50,15 @@ export class MongoDBDataAccess {
                 .collection(collection)
                 .insertOne(document);
 
-            this._response = {
+            this._return = {
                 ok: result.result.ok === 1 ? true : false,
-                countDocument: result.result.n
+                status: result.result.ok === 1 ? 500 : 200
             };
         } catch (err) {
             this.setError(err, 'insertOne');
         } finally {
-            return this._response;
+            // return this._response;
+            return this._return;
         }
     }
 
@@ -63,17 +70,25 @@ export class MongoDBDataAccess {
     async findOne(find: Object, collection: string) {
         try {
             const result = await this._db.collection(collection).findOne(find);
+            let resultDocument: any;
+            switch (collection) {
+                case 'users':
+                    resultDocument = result as IUser;
+                    break;
+            }
 
-            console.log(result);
-            this._response = {
+            this._return = {
                 ok: true,
-                document: result
+                document: resultDocument,
+                status: 200
             };
+
             // return result;
         } catch (err) {
             this.setError(err, 'findOne');
         } finally {
-            return this._response;
+            // return this._response;
+            return this._return;
         }
     }
 
@@ -89,14 +104,15 @@ export class MongoDBDataAccess {
                 .collection(collection)
                 .updateOne(find, { $set: update });
 
-            this._response = {
+            this._return = {
                 ok: result.result.ok === 1 ? true : false,
-                countDocument: result.result.n
+                status: 200
             };
         } catch (err) {
             this.setError(err, 'updateCollection');
         } finally {
-            return this._response;
+            // return this._response;
+            return this._return;
         }
     }
 
@@ -109,8 +125,10 @@ export class MongoDBDataAccess {
             typeError: err.name
         };
         this._error.setError(error);
-        this._response = {
+
+        this._return = {
             ok: false,
+            status: 500,
             errorMessage: this._error.getErrorMessageResponse()
         };
     }
