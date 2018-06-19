@@ -6,16 +6,25 @@ import * as crypt from 'bcrypt';
 
 import { IRouter } from './contracts/irouter';
 import { Router, Request, Response } from 'express';
-import { IUser } from './contracts/iuser';
+import { IUser } from '../contracts/iuser';
 import { MongoDBDataAccess } from '../data-access/mongodb.data-access';
+import { IResponse } from './contracts/iresponse';
+import { IReturn } from '../data-access/contracts/ireturn';
 
 export class AuthenticationRoute implements IRouter {
     private _router: Router;
     private _mongoDB: MongoDBDataAccess;
+    private _response: IResponse;
+    private _token: string;
 
     constructor() {
         this._router = express.Router();
         this._mongoDB = new MongoDBDataAccess('shoppinglist');
+        this._token = '';
+
+        this._response = {
+            ok: false
+        };
         this.registerRoute();
         this.loginRoute();
         this.logoutRouter();
@@ -52,7 +61,7 @@ export class AuthenticationRoute implements IRouter {
             await this._mongoDB.connect();
             const result = await this._mongoDB.insertOne('users', user);
 
-            res.status(result.ok ? 200 : 401).send({ result });
+            this.response(result, res);
         });
     }
 
@@ -116,10 +125,9 @@ export class AuthenticationRoute implements IRouter {
                         }
                     );
 
-                    resultUpdate.token = token;
-                    res.status(result.ok ? 200 : 401).send({ resultUpdate });
+                    this.response(resultUpdate, res, token);
                 } else {
-                    res.status(404).send(result);
+                    this.response(result, res);
                 }
             }
         });
@@ -141,7 +149,18 @@ export class AuthenticationRoute implements IRouter {
                 { saltJwt: '' }
             );
 
-            res.status(result.ok ? 200 : 401).send({ result });
+            this.response(result, res);
         });
+    }
+
+    private response(result: IReturn, res: Response, token?: string) {
+        this._response = {
+            ok: result.ok,
+            document: result.document,
+            error: result.errorMessage,
+            token: token
+        };
+
+        res.status(result.status).send(this._response);
     }
 }
